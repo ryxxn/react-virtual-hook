@@ -1,0 +1,26 @@
+{
+  "name": "use-virtual-list",
+  "description": "A lightweight React Hook for virtualized lists",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "repository": "https://github.com/ryxxn/react-virtual-list",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "@types/react": "^18.3.18",
+    "tsup": "^7.2.0",
+    "typescript": "^5.7.3"
+  },
+  "keywords": [],
+  "author": "ryxxn",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "react": "^18.3.1"
+  }
+}
