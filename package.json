@@ -1,5 +1,5 @@
 {
-  "name": "use-virtual-list",
+  "name": "react-virtual-hook",
   "description": "A lightweight React Hook for virtualized lists",
   "version": "0.0.0",
   "main": "dist/index.js",
@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/node": "^22.13.1",
     "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.0.0",
     "tsup": "^7.2.0",
     "typescript": "^5.7.3"
   },
