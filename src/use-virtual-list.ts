@@ -1,4 +1,5 @@
 import React from 'react';
+import { flushSync } from 'react-dom';
 
 const SCROLLING_WAIT = 100;
 
@@ -13,10 +14,10 @@ const useVirtualized = <T = any>({
   data,
   height,
   rowHeight,
-  buffer = 20,
+  buffer = 50,
 }: Props<T>) => {
-  const scrollTopRef = React.useRef(0);
-  const scrollLeftRef = React.useRef(0);
+  const [scrollTop, setScrollTop] = React.useState(0);
+  const [scrollLeft, setScrollLeft] = React.useState(0);
   const [isScrollingX, setIsScrollingX] = React.useState(false);
   const [isScrollingY, setIsScrollingY] = React.useState(false);
 
@@ -25,63 +26,51 @@ const useVirtualized = <T = any>({
   const scrollTimeoutYRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const scrollXHandler = (newScrollLeft: number) => {
-    setIsScrollingX(true);
-    // setScrollLeft(newScrollLeft);
-    scrollLeftRef.current = newScrollLeft;
+    flushSync(() => {
+      setIsScrollingX(true);
+      setScrollLeft(newScrollLeft);
+    });
 
-    if (scrollTimeoutXRef.current) {
-      clearTimeout(scrollTimeoutXRef.current);
-    }
-
-    scrollTimeoutXRef.current = setTimeout(() => {
-      setIsScrollingX(false);
-    }, SCROLLING_WAIT);
+    if (scrollTimeoutXRef.current) clearTimeout(scrollTimeoutXRef.current);
+    scrollTimeoutXRef.current = setTimeout(
+      () => setIsScrollingX(false),
+      SCROLLING_WAIT
+    );
   };
 
   const scrollYHandler = (newScrollTop: number) => {
-    setIsScrollingY(true);
-    // setScrollTop(newScrollTop);
-    scrollTopRef.current = newScrollTop;
+    flushSync(() => {
+      setIsScrollingY(true);
+      setScrollTop(newScrollTop);
+    });
 
-    if (scrollTimeoutYRef.current) {
-      clearTimeout(scrollTimeoutYRef.current);
-    }
-
-    scrollTimeoutYRef.current = setTimeout(() => {
-      setIsScrollingY(false);
-    }, SCROLLING_WAIT);
+    if (scrollTimeoutYRef.current) clearTimeout(scrollTimeoutYRef.current);
+    scrollTimeoutYRef.current = setTimeout(
+      () => setIsScrollingY(false),
+      SCROLLING_WAIT
+    );
   };
 
-  const handleScroll = React.useCallback(
-    (event: Event) => {
-      const target = event.target as HTMLElement;
+  const handleScroll = () => {
+    if (!containerRef.current) return;
 
-      const newScrollTop = target.scrollTop;
-      const newScrollLeft = target.scrollLeft;
+    requestAnimationFrame(() => {
+      const newScrollTop = containerRef.current!.scrollTop;
+      const newScrollLeft = containerRef.current!.scrollLeft;
 
-      const scrollingX = newScrollLeft !== scrollLeftRef.current;
-      const scrollingY = newScrollTop !== scrollTopRef.current;
+      const scrollingX = newScrollLeft !== scrollLeft;
+      const scrollingY = newScrollTop !== scrollTop;
 
-      if (scrollingX) {
-        scrollXHandler(newScrollLeft);
-      }
-
-      if (scrollingY) {
-        scrollYHandler(newScrollTop);
-      }
-    },
-    [scrollLeftRef, scrollTopRef, scrollTimeoutXRef, scrollTimeoutYRef]
-  );
+      if (scrollingX) scrollXHandler(newScrollLeft);
+      if (scrollingY) scrollYHandler(newScrollTop);
+    });
+  };
 
   React.useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     container.addEventListener('scroll', handleScroll, { passive: true });
-
-    // initialize scroll
-    // setScrollTop(container.scrollTop);
-    // setScrollLeft(container.scrollLeft);
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
@@ -93,20 +82,16 @@ const useVirtualized = <T = any>({
   /**
    * startIdx:
    * The starting index of the visible items in the list.
-   * Calculated based on the current `scrollTop` position.
-   * The buffer ensures that additional items are rendered before they come into view,
-   * reducing the chance of flickering during fast scrolling.
    */
   const startIdx = Math.max(
     0,
-    Math.floor(scrollTopRef.current / rowHeight) - buffer
+    // Math.floor(scrollTopRef.current / rowHeight) - dynamicBuffer
+    Math.floor(scrollTop / rowHeight) - buffer
   );
 
   /**
    * endIdx:
    * The ending index of the visible items in the list.
-   * It ensures that only the necessary items are rendered based on the available viewport height.
-   * The buffer * 2 allows rendering a few extra items below the viewport to ensure a smooth scrolling experience.
    */
   const endIdx = Math.min(
     data.length,
@@ -114,35 +99,19 @@ const useVirtualized = <T = any>({
   );
 
   const visibleData = data.slice(startIdx, endIdx);
-
   const totalHeight = data.length * rowHeight;
 
   /**
-   * scrollContainerProps:
-   * Props for the outermost scrollable container.
-   * - `maxHeight`: Restricts the height to avoid excessive scrolling.
-   * - `height`: Defines the height of the scrollable area.
+   * Get styles for container, list, and rows
    */
   const getContainerStyle = React.useCallback(
     () => ({ maxHeight: height, height }),
-    [containerRef, height]
+    [height]
   );
-
-  /**
-   * listContainerProps:
-   * Props for the list wrapper container.
-   * - `height`: Matches the total height of all items to maintain scroll position accuracy.
-   */
   const getListStyle = React.useCallback(
     () => ({ height: totalHeight, position: 'relative' } as const),
     [totalHeight]
   );
-
-  /**
-   * itemProps:
-   * Props for each individual list item.
-   * - `height`: Ensures each item maintains a consistent height.
-   */
   const getRowStyle = React.useCallback(
     (index: number) =>
       ({
@@ -157,19 +126,14 @@ const useVirtualized = <T = any>({
   return {
     visibleData,
     containerRef,
-    // indexes
     endIdx,
     startIdx,
-    // scroll positions
-    scrollTop: scrollTopRef.current,
-    scrollLeft: scrollLeftRef.current,
-    // heights
+    scrollTop,
+    scrollLeft,
     rowHeight,
     totalHeight,
-    // isScrolling
     isScrollingX,
     isScrollingY,
-    // props
     getListStyle,
     getRowStyle,
     getContainerStyle,
