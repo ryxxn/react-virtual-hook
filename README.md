@@ -40,17 +40,21 @@ yarn add use-virtual-list
 import { useVirtualList } from "use-virtual-list";
 
 const MyList = () => {
-  const { visibleData, containerRef, getRowStyle } = useVirtualList({
+  const virtualizeManager = useVirtualList({
     data: Array.from({ length: 10000 }, (_, i) => ({ id: i + 1, name: `Item ${i + 1}` })),
     height: 500,
     rowHeight: 50,
   });
 
   return (
-    <div ref={containerRef} style={{ height: 500, overflowY: "auto" }}>
-      <ul style={{ position: "relative" }}>
+    <div ref={containerRef} style={virtualizedManager.getContainerStyle()}>
+      <ul style={virtualizedManager.getListStyle()}>
         {visibleData.map((item, index) => (
-          <li key={item.id} style={getRowStyle(index)} className="border p-2">
+          <li
+            key={item.id}
+            style={virtualizedManager.getRowStyle(index)}
+            className="border p-2"
+          >
             {item.name}
           </li>
         ))}
@@ -71,7 +75,7 @@ const { visibleData, containerRef, getRowStyle } = useVirtualList({
   data,
   height: 600,
   rowHeight: 40,
-  buffer: 15, // Preload 15 items above and below
+  buffer: 15, // Preload 15 items above and below (default=10)
 });
 ```
 
@@ -86,16 +90,20 @@ Instead of rendering thousands of elements, useVirtualList only renders the item
 Yes! You can wrap a `<tbody>` inside a virtualized list for efficient table rendering.
 
 ```tsx
-<table className="w-full border-collapse">
+<table
+  className="w-full border-collapse"
+  ref={containerRef}
+  style={virtualizedManager.getContainerStyle()}
+>
   <thead className="sticky top-0 bg-gray-200 border-b">
     <tr>
       <th className="p-2 border">ID</th>
       <th className="p-2 border">Name</th>
     </tr>
   </thead>
-  <tbody ref={containerRef} style={{ height: 500, overflowY: "auto", display: "block" }}>
+  <tbody style={virtualizedManager.getListStyle()}>
     {visibleData.map((row, index) => (
-      <tr key={row.id} style={getRowStyle(index)}>
+      <tr key={row.id} style={virtualizedManager.getRowStyle(index)}>
         <td className="p-2 border">{row.id}</td>
         <td className="p-2 border">{row.name}</td>
       </tr>
