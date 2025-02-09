@@ -14,7 +14,7 @@ const useVirtualized = <T = any>({
   data,
   height,
   rowHeight,
-  buffer = 50,
+  buffer = 10,
 }: Props<T>) => {
   const [scrollTop, setScrollTop] = React.useState(0);
   const [scrollLeft, setScrollLeft] = React.useState(0);
